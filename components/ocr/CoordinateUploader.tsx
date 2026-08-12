@@ -31,8 +31,14 @@ export function CoordinateUploader({ onCoordinatesExtracted }: CoordinateUploade
       const processedCanvas = await new Promise<HTMLCanvasElement>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
+          // Target optimal resolution for OCR (max ~2000px on longest edge)
+          const MAX_DIMENSION = 2000;
+          const longestEdge = Math.max(img.width, img.height);
+          const scale = longestEdge > MAX_DIMENSION 
+            ? (MAX_DIMENSION / longestEdge) // Scale down if too large (e.g. 12MP camera photo)
+            : (longestEdge < 1000 ? 2 : 1); // Upscale only if it's very small
+
           const canvas = document.createElement('canvas');
-          const scale = 2; // Upscale for better OCR
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
           const ctx = canvas.getContext('2d');
@@ -43,10 +49,18 @@ export function CoordinateUploader({ onCoordinatesExtracted }: CoordinateUploade
           const data = imageData.data;
           
           for (let i = 0; i < data.length; i += 4) {
+            // Convert to grayscale
             const avg = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-            data[i] = avg;     // R
-            data[i + 1] = avg; // G
-            data[i + 2] = avg; // B
+            
+            // Boost contrast to help camera photos
+            // Darker pixels get darker, lighter pixels get lighter
+            let enhanced = avg;
+            if (enhanced > 150) enhanced = Math.min(255, enhanced * 1.2);
+            if (enhanced < 100) enhanced = Math.max(0, enhanced * 0.8);
+
+            data[i] = enhanced;     // R
+            data[i + 1] = enhanced; // G
+            data[i + 2] = enhanced; // B
           }
           ctx.putImageData(imageData, 0, 0);
           resolve(canvas);
