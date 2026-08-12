@@ -169,6 +169,7 @@ export default function LandMap({ points, savedProperties = [], mode, userLocati
       <MapContainer
         center={defaultCenter}
         zoom={13}
+        maxZoom={24}
         style={{ width: '100%', height: '100%' }}
         scrollWheelZoom={true}
         zoomControl={false}
@@ -178,6 +179,8 @@ export default function LandMap({ points, savedProperties = [], mode, userLocati
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={24}
+          maxNativeZoom={19}
         />
 
         <MapEvents mode={mode} onMapClick={onMapClick} />
