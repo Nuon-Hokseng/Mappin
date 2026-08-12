@@ -249,7 +249,7 @@ export default function Home() {
                       <Pointer size={20} />
                     </div>
                     <div className="text-left flex-1">
-                      <div className={`font-semibold ${mode === 'DRAW' ? 'text-white' : 'text-gray-900'}`}>Draw 4 Points</div>
+                      <div className={`font-semibold ${mode === 'DRAW' ? 'text-white' : 'text-gray-900'}`}>Draw Polygon</div>
                       <div className={`text-xs ${mode === 'DRAW' ? 'text-blue-100' : 'text-gray-500'} font-normal`}>Manually click on map</div>
                     </div>
                   </Button>

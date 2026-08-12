@@ -295,14 +295,6 @@ export default function LandMap({ points, savedProperties = [], mode, userLocati
         )}
       </MapContainer>
 
-      {/* Mode Indicator Overlay */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] pointer-events-none">
-        {mode === 'DRAW' && (
-          <div className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg font-medium text-sm">
-            Draw Mode: Click 4 points on the map ({points.length}/4)
-          </div>
-        )}
-      </div>
     </div>
   );
 }
