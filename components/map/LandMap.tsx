@@ -18,15 +18,23 @@ L.Icon.Default.mergeOptions({
 // Component to handle map view fitting when points change
 function MapBounds({ points, userLocation }: { points: MapPoint[], userLocation: { lat: number, lng: number } | null }) {
   const map = useMap();
+  const prevPointsLength = useRef(0);
 
   useEffect(() => {
-    if (points.length > 0) {
+    // Only auto-fit if we just loaded multiple points at once (e.g. confirming OCR or Manual entry)
+    // This prevents the map from sliding/moving when drawing points one by one or dragging them.
+    if (points.length >= 3 && Math.abs(points.length - prevPointsLength.current) > 1) {
       const bounds = L.latLngBounds(points.map(p => [p.latitude, p.longitude]));
       map.fitBounds(bounds, { padding: [50, 50] });
-    } else if (userLocation) {
+    }
+    prevPointsLength.current = points.length;
+  }, [points, map]);
+
+  useEffect(() => {
+    if (userLocation) {
       map.flyTo([userLocation.lat, userLocation.lng], 16);
     }
-  }, [points, userLocation, map]);
+  }, [userLocation, map]);
 
   return null;
 }
