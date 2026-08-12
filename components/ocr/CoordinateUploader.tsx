@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { createWorker } from 'tesseract.js';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, Camera } from 'lucide-react';
 import { UTMCoordinate } from '@/types';
 import { parseOCRText } from '@/lib/ocr/parser';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +14,7 @@ export function CoordinateUploader({ onCoordinatesExtracted }: CoordinateUploade
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,6 +98,9 @@ export function CoordinateUploader({ onCoordinatesExtracted }: CoordinateUploade
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      if (cameraInputRef.current) {
+        cameraInputRef.current.value = '';
+      }
     }
   };
 
@@ -110,16 +114,35 @@ export function CoordinateUploader({ onCoordinatesExtracted }: CoordinateUploade
         onChange={handleImageUpload}
         disabled={isProcessing}
       />
+      <input
+        type="file"
+        accept="image/jpeg, image/png"
+        capture="environment"
+        className="hidden"
+        ref={cameraInputRef}
+        onChange={handleImageUpload}
+        disabled={isProcessing}
+      />
 
       {!isProcessing ? (
-        <Button
-          variant="outline"
-          className="w-full flex gap-2 items-center justify-center py-4 border-dashed border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-600 hover:text-blue-600"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload size={20} />
-          <span>Upload Image</span>
-        </Button>
+        <div className="flex flex-col gap-3 w-full">
+          <Button
+            variant="outline"
+            className="w-full flex gap-2 items-center justify-center py-6 border-dashed border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-600 hover:text-blue-600"
+            onClick={() => cameraInputRef.current?.click()}
+          >
+            <Camera size={24} />
+            <span className="font-semibold">Scan with Camera</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full flex gap-2 items-center justify-center py-4 border-dashed border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-600 hover:text-blue-600"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={20} />
+            <span>Upload Image</span>
+          </Button>
+        </div>
       ) : (
         <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg flex flex-col items-center justify-center gap-3">
           <Loader2 className="animate-spin text-blue-600" size={24} />

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap, ZoomControl } from 'react-leaflet';
+import React, { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap, ZoomControl, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPoint, SavedProperty } from '@/types';
@@ -39,6 +39,21 @@ function MapBounds({ points, userLocation }: { points: MapPoint[], userLocation:
   return null;
 }
 
+// Component to track map zoom level
+function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  const map = useMapEvents({
+    zoomend: () => {
+      onZoomChange(map.getZoom());
+    },
+  });
+  
+  useEffect(() => {
+    onZoomChange(map.getZoom());
+  }, [map, onZoomChange]);
+  
+  return null;
+}
+
 interface LandMapProps {
   points: MapPoint[];
   savedProperties?: SavedProperty[];
@@ -51,6 +66,7 @@ interface LandMapProps {
 export default function LandMap({ points, savedProperties = [], mode, userLocation, onPointDrag, onMapClick }: LandMapProps) {
   // Default to Cambodia region (approx center)
   const defaultCenter: [number, number] = [11.5564, 104.9282];
+  const [currentZoom, setCurrentZoom] = useState(13);
 
   const createNumberedIcon = (num: number) => {
     const svgHTML = `
@@ -119,6 +135,33 @@ export default function LandMap({ points, savedProperties = [], mode, userLocati
     iconAnchor: [28.5, 24.5]
   });
 
+  const createVertexBadgeIcon = (num: number) => {
+    return L.divIcon({
+      className: 'vertex-badge-icon',
+      html: `<div style="background: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #374151; box-shadow: 0 1px 3px rgba(0,0,0,0.3); border: 1px solid #e5e7eb; transform: translate(-50%, -50%);">${num}</div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
+    });
+  };
+
+  const createDistanceBadgeIcon = (distance: number) => {
+    return L.divIcon({
+      className: 'distance-badge-icon',
+      html: `<div style="background: white; border-radius: 9999px; padding: 2px 8px; font-size: 11px; font-weight: bold; color: #374151; box-shadow: 0 1px 3px rgba(0,0,0,0.3); white-space: nowrap; border: 1px solid #e5e7eb; display: inline-block; transform: translate(-50%, -50%);">${distance.toLocaleString(undefined, {maximumFractionDigits: 0})} m</div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
+    });
+  };
+
+  const createAreaBadgeIcon = (area: number) => {
+    return L.divIcon({
+      className: 'area-badge-icon',
+      html: `<div style="background: white; border-radius: 9999px; padding: 4px 10px; font-size: 12px; font-weight: bold; color: #374151; box-shadow: 0 1px 3px rgba(0,0,0,0.3); white-space: nowrap; border: 1px solid #e5e7eb; display: inline-block; transform: translate(-50%, 35px);">${area.toLocaleString(undefined, {maximumFractionDigits: 0})} m²</div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
+    });
+  };
+
   const polygonPositions = points.map(p => [p.latitude, p.longitude] as [number, number]);
 
   return (
@@ -130,6 +173,7 @@ export default function LandMap({ points, savedProperties = [], mode, userLocati
         scrollWheelZoom={true}
         zoomControl={false}
       >
+        <ZoomTracker onZoomChange={setCurrentZoom} />
         <ZoomControl position="topright" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -177,19 +221,65 @@ export default function LandMap({ points, savedProperties = [], mode, userLocati
         ))}
 
         {savedProperties.map((property) => (
-          <Marker
-            key={property.id}
-            position={[property.center.latitude, property.center.longitude]}
-            icon={savedPropertyIcon}
-          >
-            <Popup>
-              <div className="text-sm">
-                <strong>Saved Property</strong><br />
-                Area: {property.area.toLocaleString(undefined, { maximumFractionDigits: 2 })} m²<br />
-                Points: {property.points.length}
-              </div>
-            </Popup>
-          </Marker>
+          <React.Fragment key={property.id}>
+            {currentZoom >= 16 && (
+              <>
+                {/* Polygon Outline & Fill */}
+                <Polygon
+                  positions={property.points.map(p => [p.latitude, p.longitude] as [number, number])}
+                  pathOptions={{
+                    color: 'white',
+                    fillColor: 'white',
+                    fillOpacity: 0.15,
+                    weight: 2
+                  }}
+                />
+
+                {/* Vertices */}
+                {property.points.map((p, i) => (
+                  <Marker
+                    key={`vertex-${property.id}-${i}`}
+                    position={[p.latitude, p.longitude]}
+                    icon={createVertexBadgeIcon(i + 1)}
+                  />
+                ))}
+
+                {/* Side Lengths */}
+                {property.points.map((p, i) => {
+                  const nextP = property.points[(i + 1) % property.points.length];
+                  const midLat = (p.latitude + nextP.latitude) / 2;
+                  const midLng = (p.longitude + nextP.longitude) / 2;
+                  return (
+                    <Marker
+                      key={`side-${property.id}-${i}`}
+                      position={[midLat, midLng]}
+                      icon={createDistanceBadgeIcon(property.sides && property.sides[i] ? property.sides[i] : 0)}
+                    />
+                  );
+                })}
+
+                {/* Center Area Badge */}
+                <Marker
+                  position={[property.center.latitude, property.center.longitude]}
+                  icon={createAreaBadgeIcon(property.area)}
+                />
+              </>
+            )}
+
+            {/* Green Pin (Always visible) */}
+            <Marker
+              position={[property.center.latitude, property.center.longitude]}
+              icon={savedPropertyIcon}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <strong>Saved Property</strong><br />
+                  Area: {property.area.toLocaleString(undefined, { maximumFractionDigits: 2 })} m²<br />
+                  Points: {property.points.length}
+                </div>
+              </Popup>
+            </Marker>
+          </React.Fragment>
         ))}
 
         {userLocation && (

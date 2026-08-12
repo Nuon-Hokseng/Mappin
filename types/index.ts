@@ -25,4 +25,5 @@ export type SavedProperty = {
   center: { latitude: number; longitude: number };
   points: MapPoint[];
   area: number;
+  sides: number[];
 };

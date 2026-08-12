@@ -46,7 +46,8 @@ export default function Home() {
       id: crypto.randomUUID(),
       center,
       points: [...points],
-      area: measurements.area
+      area: measurements.area,
+      sides: measurements.sides
     };
 
     const updated = [...savedProperties, newProperty];
