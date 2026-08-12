@@ -10,7 +10,7 @@ import { LandMeasurements } from '@/components/land/LandMeasurements';
 import MapContainer from '@/components/map/MapContainer';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
-import { MapPin, Navigation, Trash2, Camera, Pointer, Play, Keyboard } from 'lucide-react';
+import { MapPin, Navigation, Trash2, Camera, Pointer, Play, Keyboard, Save } from 'lucide-react';
 
 type AppMode = 'VIEW' | 'DRAW' | 'IMPORT' | 'REVIEW' | 'MANUAL';
 
@@ -84,20 +84,12 @@ export default function Home() {
   const handleMapClick = useCallback((lat: number, lng: number) => {
     if (mode === 'DRAW') {
       setPoints(prev => {
-        if (prev.length >= 4) return prev; // Limit to 4 points for manual draw
-        
-        const newPoints = [...prev, {
+        return [...prev, {
           id: crypto.randomUUID(),
           index: prev.length,
           latitude: lat,
           longitude: lng
         }];
-        
-        if (newPoints.length === 4) {
-          setMode('VIEW');
-        }
-        
-        return newPoints;
       });
     }
   }, [mode]);
@@ -263,12 +255,14 @@ export default function Home() {
                   </Button>
                 </div>
               )}
-              
-              {(mode !== 'REVIEW' && mode !== 'MANUAL' && mode !== 'IMPORT') && (
-                <div className="pt-4 mt-2 border-t border-gray-100 flex gap-2 justify-end">
-                  {points.length > 0 && (
-                    <Button variant="outline" className="flex gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-gray-200" onClick={clearMap} title="Clear Map">
-                      <Trash2 size={16} /> Clear Map
+              {(mode !== 'REVIEW' && mode !== 'MANUAL' && mode !== 'IMPORT') && points.length > 0 && (
+                <div className="pt-4 mt-2 border-t border-gray-100 flex gap-2 w-full animate-in fade-in zoom-in duration-200">
+                  <Button variant="outline" className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-gray-200" onClick={clearMap}>
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  </Button>
+                  {points.length >= 3 && (
+                    <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveProperty}>
+                      <Save className="w-4 h-4 mr-2" /> Save
                     </Button>
                   )}
                 </div>
@@ -297,6 +291,11 @@ export default function Home() {
           <button onClick={requestUserLocation} className="bg-white p-3 rounded-full shadow-lg border border-gray-200 text-gray-700 active:bg-gray-50">
             <Navigation size={20} />
           </button>
+          {(points.length >= 3) && (
+            <button onClick={handleSaveProperty} className="bg-green-600 p-3 rounded-full shadow-lg border border-green-700 text-white active:bg-green-700">
+              <Save size={20} />
+            </button>
+          )}
           {(points.length > 0) && (
             <button onClick={clearMap} className="bg-white p-3 rounded-full shadow-lg border border-gray-200 text-red-600 active:bg-red-50">
               <Trash2 size={20} />
